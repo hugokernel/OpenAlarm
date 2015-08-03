@@ -40,3 +40,7 @@ nosetests.xml
 *.s#*
 *.l#*
 
+src/.build
+src/funky/.build
+src/node_test/.build
+src/node_base/.build
