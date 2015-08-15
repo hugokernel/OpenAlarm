@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.05" unitdist="inch" unit="inch" style="dots" multiple="1" display="yes" altdistance="0.01" altunitdist="inch" altunit="inch"/>
+<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -9525,6 +9525,15 @@ W = angled&lt;p&gt;
 <wire x1="60.96" y1="72.39" x2="60.96" y2="74.93" width="0.1524" layer="91"/>
 <label x="63.5" y="77.47" size="1.778" layer="95" rot="R180"/>
 </segment>
+<segment>
+<pinref part="IC1" gate="G$1" pin="USB"/>
+<wire x1="6.35" y1="106.68" x2="3.81" y2="106.68" width="0.1524" layer="91"/>
+<pinref part="C2" gate="G$1" pin="2"/>
+<wire x1="3.81" y1="104.14" x2="3.81" y2="106.68" width="0.1524" layer="91"/>
+<wire x1="3.81" y1="106.68" x2="1.27" y2="106.68" width="0.1524" layer="91"/>
+<junction x="3.81" y="106.68"/>
+<label x="-7.62" y="106.68" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="D+" class="0">
 <segment>
@@ -9932,16 +9941,6 @@ W = angled&lt;p&gt;
 <pinref part="PAD7" gate="1" pin="P"/>
 <wire x1="125.73" y1="12.7" x2="123.19" y2="12.7" width="0.1524" layer="91"/>
 <label x="120.015" y="12.065" size="1.778" layer="95"/>
-</segment>
-</net>
-<net name="N$9" class="0">
-<segment>
-<pinref part="IC1" gate="G$1" pin="USB"/>
-<wire x1="6.35" y1="106.68" x2="3.81" y2="106.68" width="0.1524" layer="91"/>
-<pinref part="C2" gate="G$1" pin="2"/>
-<wire x1="3.81" y1="104.14" x2="3.81" y2="106.68" width="0.1524" layer="91"/>
-<wire x1="3.81" y1="106.68" x2="1.27" y2="106.68" width="0.1524" layer="91"/>
-<junction x="3.81" y="106.68"/>
 </segment>
 </net>
 <net name="N$28" class="0">
