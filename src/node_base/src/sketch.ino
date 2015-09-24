@@ -233,6 +233,7 @@ void cmd_remote() {
             }
 
             if (((uint8_t)rf12_hdr & 0x1F) != nodeid) {
+                P("Skip nodeid !");
                 continue;
             }
 
@@ -297,8 +298,11 @@ void cmd_remote() {
                     P("PIF");
                     PLN(rf12_data[0]);
                 }
+            } else if (remote_connection_status == REMOTE_STATUS_CONNECTING) {
+                // Skip
             } else {
                 PLN("[error: 22]");
+                PLN(remote_connection_status);
                 //remote = false;
                 //continue;
             }
@@ -339,8 +343,13 @@ void get_random(uint8_t size, uint8_t *string) {
     }
 }
 */
+bool listen_mode_raw = false;
 
 void cmd_listen() {
+    char *arg;
+    arg = sCmd.next();
+    listen_mode_raw = (!strcmp(arg, "raw"));
+
     LISTEN_MODE_START();
     PFLN("Enter listen mode !");
 }
@@ -464,19 +473,28 @@ void loop() {
             }
 
             if (n) {
+                if (listen_mode_raw) {
+                    P("OKX ");
 
-                P("[NodeId: ");
-                P((int)rf12_hdr & 0x1F);
-                P(", grp: ");
-                P((int)rf12_grp);
+                    showByte((int)rf12_hdr & 0x1F);
 
-                Serial.print(", data: ");
-                for (uint8_t i = 0; i < n; i++) {
-                    showByte(rf12_data[i]);
-                    P(" ");
+                    for (uint8_t i = 0; i < n; i++) {
+                        showByte(rf12_data[i]);
+                    }
+                } else {
+                    P("[NodeId: ");
+                    P((int)rf12_hdr & 0x1F);
+                    P(", grp: ");
+                    P((int)rf12_grp);
+
+                    Serial.print(", data: ");
+                    for (uint8_t i = 0; i < n; i++) {
+                        showByte(rf12_data[i]);
+                        P(" ");
+                    }
+
+                    P("]");
                 }
-
-                P("]");
             }
 
             PLN();

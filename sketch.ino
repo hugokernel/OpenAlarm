@@ -5,17 +5,12 @@
 
 #include <SerialCommand.h>
 
+#define RF69_COMPAT 0 // define this to use the RF69 driver i.s.o. RF12
+
+#include <JeeLib.h> // https://github.com/jcw/jeelib
 #include "pins_arduino.h"
 
 #include <openalarm.h>
-#define RF69_COMPAT 0 // define this to use the RF69 driver i.s.o. RF12
-
-#include <JeeLib.h>
-
-/*
-#include <extEEPROM.h>
-extEEPROM eep(kbits_2, 1, 8, 0x50);
-*/
 
 //#define SEND_WHEN_INPUT_CHANGE
 
@@ -61,13 +56,11 @@ int numSensors;
 extern SerialCommand sCmd;
 
 extern config_t config;
-extern bool usb;
+//extern bool usb;
 
-//bool usb = false;
+bool usb = false;
 extern uint8_t current_mode;
 extern uint8_t remote_node_id;
-
-bool usb_removed = false;
 
 //static byte value, stack[20], top;
 
@@ -82,8 +75,6 @@ typedef struct {
      * bit 0 : Reed
      */
     uint8_t sensors;
-
-    uint8_t test;
 } Payload;
 
 Payload payloads;
@@ -190,81 +181,6 @@ void cmd_send() {
     PLN("Done !");
 }
 
-/*
-void cmd_eew() {
-    char *arg = 0;
-    uint8_t address = 0;
-
-    arg = sCmd.next();
-    address = atoi(arg);
-    PF("Write address ");
-    P(address);
-
-    arg = sCmd.next();
-    PF(", with data : ");
-    PLN(arg);
-
-    eep.write(address, atoi(arg));
-}
-
-void cmd_eer() {
-    char *arg = 0;
-    uint8_t address = 0;
-
-    arg = sCmd.next();
-    address = atoi(arg);
-    PF("Read address ");
-    P(address);
-    PF(" : ");
-
-    PLN(eep.read(address));
-}
-*/
-
-void cmd_test() {
-    char *arg = 0;
-
-    arg = sCmd.next();
-    if (!strcmp(arg, "usb")) {
-        PFLN("Test usb insertion !");
-
-        while (1) {
-            P(".");
-            delay(300);
-            //if (BIT_TEST(USBSTA, VBUS)) {
-            if (usb_inserted()) {
-                RED_LED_ON();
-                PLN("USB!");
-            } else {
-                RED_LED_OFF();
-            }
-        }
-    } else if (!strcmp(arg, "io")) {
-
-        PFLN("Test input / output !");
-
-        uint8_t ios[] = { 0, 1, 2, 3, 4, GREEN_LED_PIN, 6, 7, 8, 9, 12, RED_LED_PIN };
-
-        for (uint8_t i = 0; i < sizeof ios; i++) {
-            pinMode(i, OUTPUT);
-        }
-
-        bool status = true;
-        while (1) {
-            PF("Set ios to ");
-            PLN(status);
-
-            for (uint8_t i = 0; i < sizeof ios; i++) {
-                digitalWrite(ios[i], status);
-            }
-
-            delay(500);
-
-            status = not status;
-        }
-    }
-}
-
 command commands[] = {
     { "help",       cmd_help,       "This help !" },
     { "?",          cmd_help,       "This help !" },
@@ -282,70 +198,17 @@ command commands[] = {
 
     { "send",       cmd_send,       "Send data from RF" },
     { "rfinit",     cmd_rfinit,     "Init RF module" },
-
-//    { "eew",        cmd_eew,        "EEPROM write" },
-//    { "eer",        cmd_eer,        "EEPROM read" },
-
 //    { "rfoff",      cmd_rfoff,      "Power RF off" },
 //    { "rfon",       cmd_rfon,       "Power RF on" },
 //    { "sleep",      cmd_sleep,      "Sleep !" },
 
     { "guard",      cmd_guard,      "Start guard mode !" },
-    { "test",       cmd_test,        "Test !" },
 //    { "reboot",     cmd_reboot,     "Go to beginning of application space !" },
 };
 
 CMD_HELP(commands, cmd_help);
 
 ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Sleepy power saving
-
-void command_prompt() {
-
-    usbloop = true;
-    usb_removed = false;
-
-    // USB is connected
-    usb = 1;
-
-    for(int i = 0; i < 5; i++){
-        GREEN_LED_ON()
-        delay(50);
-        GREEN_LED_OFF()
-        delay(50);
-    }
-
-    Serial.begin(57600);  // Pretty much useless on USB CDC, in fact this procedure is blank. Included here so peope don't wonder where is Serial.begin
-
-    PLN(BANNER);
-    print_config();
-
-    // Wait for configuration for 10 seconds, then timeout and start the sketch
-    unsigned long start = millis();
-
-    //rfm_init();
-    GREEN_LED_OFF()
-    while (usbloop) {
-        if (Serial.available()) {
-            sCmd.readSerial();
-            start = millis();
-        }
-    }
-
-    usb = 0;
-
-    PFLN("Starting sketch !");
-    Serial.flush();
-
-    for(int i = 0; i < 15; i++){
-        GREEN_LED_OFF()
-        delay(50);
-        GREEN_LED_ON()
-        delay(150);
-    }
-    GREEN_LED_OFF()
-
-    powersave();
-}
 
 void setup() {
 
@@ -356,14 +219,6 @@ void setup() {
     GREEN_LED_OFF();
 
     CMD_SETUP(sCmd, commands, cmd_unrecognized);
-
-    /*
-    uint8_t eepStatus = eep.begin(twiClock100kHz);
-    if (eepStatus) {
-        P("EEPROM begin error !");
-        return;
-    }
-    */
 
     USBCON = USBCON | B00010000;
     delay(550);  // Wait at least between 150ms and 1000ms (necessary); Slower host like Raspberry Pi needs more time
@@ -389,19 +244,52 @@ void setup() {
         config.cmd_timeout = CMD_TIMEOUT_MIN;
     }
 
-    rfm_init();
-
     // Interrupt from usb ?
     //if (1 || UDINT & B00000001) {
-    //if (UDINT & B00000001) {
-    if (!ON_USB()) {
+    if (UDINT & B00000001) {
         // USB Disconnected; We are running on battery so we must save power
         usb = 0;
         powersave();
         //  clock_prescale_set(clock_div_2);   //Run at 4Mhz so we can talk to the RFM12B over SPI
     } else {
-        command_prompt();
+        // USB is connected
+        usb = 1;
+
+        for(int i = 0; i < 5; i++){
+            GREEN_LED_ON()
+            delay(50);
+            GREEN_LED_OFF()
+            delay(50);
+        }
+
+        Serial.begin(57600);  // Pretty much useless on USB CDC, in fact this procedure is blank. Included here so peope don't wonder where is Serial.begin
+
+        PLN(BANNER);
+        print_config();
+
+        // Wait for configuration for 10 seconds, then timeout and start the sketch
+        unsigned long start = millis();
+
+        //rfm_init();
+        GREEN_LED_OFF()
+        while (usbloop) {
+            if (Serial.available()) {
+                sCmd.readSerial();
+                start = millis();
+            }
+        }
+
+        usb = 0;
+
+        PFLN("Starting sketch !");
+        Serial.flush();
     }
+
+    //usb = 0;
+
+    rfm_init();
+
+    GREEN_LED_OFF()
 
 #ifdef ONEWIRE
     pinMode(tempPower, OUTPUT); // set power pin for DS18B20 to output
@@ -410,8 +298,32 @@ void setup() {
 
     // Start up the library
     sensors.begin();
-    numSensors = sensors.getDeviceCount();
+    numSensors=sensors.getDeviceCount();
 #endif
+
+    power_spi_disable();
+
+    powersave();
+
+    // Switch to RC Clock
+    UDINT  &= ~(1 << SUSPI); // UDINT.SUSPI = 0; Usb_ack_suspend
+    USBCON |= ( 1 <<FRZCLK); // USBCON.FRZCLK = 1; Usb_freeze_clock
+    PLLCSR &= ~(1 << PLLE); // PLLCSR.PLLE = 0; Disable_pll
+
+    CLKSEL0 |= (1 << RCE); // CLKSEL0.RCE = 1; Enable_RC_clock()
+    while ( (CLKSTA & (1 << RCON)) == 0){}	// while (CLKSTA.RCON != 1);  while (!RC_clock_ready())
+    CLKSEL0 &= ~(1 << CLKS);  // CLKSEL0.CLKS = 0; Select_RC_clock()
+    CLKSEL0 &= ~(1 << EXTE);  // CLKSEL0.EXTE = 0; Disable_external_clock
+
+    power_spi_enable();
+
+    for(int i = 0; i < 15; i++){
+        GREEN_LED_OFF()
+        delay(50);
+        GREEN_LED_ON()
+        delay(150);
+    }
+    GREEN_LED_OFF()
 
 #ifdef SEND_WHEN_INPUT_CHANGE
 #ifdef SENSOR_REED
@@ -430,8 +342,11 @@ void setup() {
     pinMode(SENSOR_PIR_PIN, INPUT);
     attachInterrupt(SENSOR_PIR_INT, int_pir, RISING);
 #endif
+
     //attachInterrupt(0, dataReceived, CHANGE);
+
     payloads.sensors = 0;
+
     //Sleepy::powerDown();
 #endif
     randomSeed(analogRead(0));
@@ -462,169 +377,26 @@ void int_pir() {
 
 bool stateGreenLed = false;
 
-void remote_handler() {
-    PLN();
-
-    power_spi_enable();
-    rf12_sleep(-1);              // Wake up RF module
-
-    //rf12_sendStart(RF12_HDR_ACK | nodeid, data, sizeof data);
-
-    payload_challenge_t payload;
-    payload.command = REMOTE_CMD_READY;
-    uint8_t challenge[KEY_SIZE];
-    get_random(KEY_SIZE, challenge);
-
-    memcpy(&payload.challenge, &challenge, sizeof payload.challenge);
-
-    uint8_t data = REMOTE_CMD_READY;
-    rf12_sendStart(RF12_HDR_ACK | remote_node_id, &payload, sizeof payload);
-
-    // Wait for ACK
-    if (!waitForAck()) {
-        REMOTE_MODE_EXIT();
-        return;
-    }
-
-    unsigned long last_cmd_time, last_time;
-    last_cmd_time = last_time = millis();
-
-    // Now, standby for challenge !
-    while (1) {
-
-        // Wait for challenge !
-        if (last_time + 5000 < millis()) {
-            REMOTE_MODE_EXIT();
-            break;
-        }
-
-        if (rf12_recvDone()) {
-
-            if (rf12_crc != 0) {
-                continue;
-            }
-
-            char key[] = "toto";
-            payload = *(payload_challenge_t*)rf12_data;
-            if (payload.command == REMOTE_CMD_READY && rf12_len == KEY_SIZE + 1) {
-
-                bool good = true;
-
-                for (uint8_t i = 0; i < min(KEY_SIZE, rf12_len - 1); i++) {
-                    if ((challenge[i] ^ key[i]) != payload.challenge[i]) {
-                        good = false;
-                        break;
-                    }
-                }
-
-                if (good) {
-                    rf12_sendStart(RF12_ACK_REPLY, 0, 0);
-                } else {
-                    REMOTE_MODE_EXIT();
-                }
-
-                break;
-            }
-        }
-    }
-
-    stateGreenLed = digitalRead(GREEN_LED_PIN);
-
-    last_cmd_time = last_time = millis();
-
-    while (REMOTE_IS_ACTIVE()) {
-
-        if (last_time + 250 < millis()) {
-
-            if (config.feedback) {
-                digitalWrite(GREEN_LED_PIN, !digitalRead(GREEN_LED_PIN));
-            }
-
-            //digitalWrite(RED_LED_PIN, !digitalRead(RED_LED_PIN));
-            last_time = millis();
-
-            if (last_cmd_time + (long)((long)config.cmd_timeout * 1000) < millis()) {
-                uint8_t data = REMOTE_CMD_EXIT;
-                rf12_sendStart(RF12_HDR_ACK | remote_node_id, &data, sizeof data);
-
-                rf12_sendWait(2);
-
-                // Wait for ACK
-                if (!waitForAck()) {
-                    continue;
-                }
-
-                REMOTE_MODE_EXIT();
-                break;
-            }
-        }
-
-        if (rf12_recvDone()) {
-
-            if (rf12_crc != 0) {
-                continue;
-            }
-
-            if (RF12_WANTS_ACK) {
-                rf12_sendStart(RF12_ACK_REPLY, 0, 0);
-                rf12_sendWait(2);
-            }
-
-            last_cmd_time = millis();
-
-            switch (rf12_data[0]) {
-                case REMOTE_CMD_EXIT:
-                    REMOTE_MODE_EXIT();
-                    break;
-                case REMOTE_CMD_LED_TOGGLE:
-                    for (uint8_t i = 0; i < sizeof led_mapping; i++) {
-                        if (BIT_TEST(rf12_data[1], i)) {
-                            digitalWrite(led_mapping[i], !digitalRead(led_mapping[i]));
-                        }
-                    }
-                    break;
-                case REMOTE_CMD_LED_SET:
-                    // led set 3 1
-                    for (uint8_t i = 0; i < sizeof led_mapping; i++) {
-                        if (BIT_TEST(rf12_data[1], i)) {
-                            digitalWrite(led_mapping[i], rf12_data[2] ? HIGH : LOW);
-                        }
-                    }
-                    break;
-                case REMOTE_CMD_PERIOD:
-                    config.period = (uint8_t)rf12_data[1];
-                    config_save();
-                    break;
-                case REMOTE_CMD_POWER:
-                    // 0: highest, 7: lowest
-                    config.power = (rf12_data[1] > 7 ? 7 : (uint8_t)rf12_data[1]);
-                    //config_save();
-                    save_and_apply();
-                    break;
-                case REMOTE_CMD_FEEDBACK:
-                    config.feedback = (bool)rf12_data[1];
-                    config_save();
-                    break;
-                case REMOTE_CMD_TIMEOUT:
-                    config.cmd_timeout = max(CMD_TIMEOUT_MIN, (uint8_t)rf12_data[1]);
-                    config_save();
-                    break;
-            }
-        }
-    }
-
-    digitalWrite(GREEN_LED_PIN, stateGreenLed);
-
-    power_spi_disable();
-}
-
 void loop() {
 
     if (config.feedback) {
         GREEN_LED_ON()
+        RED_LED_ON()
         delay(50);
         GREEN_LED_OFF()
+        RED_LED_OFF()
     }
+
+    // TESTALACON
+    //usb = 1;
+
+    power_adc_enable();
+    readVcc(); // scrap first reading
+    payloads.voltage = readVcc(); // Get supply voltage
+
+    //readTempSensor();
+    //payloads.temperature = readTempSensor(); // Get temperature
+    power_adc_disable();
 
 #ifdef ONEWIRE
     pinMode(tempPower, OUTPUT); // set power pin for DS18B20 to output
@@ -705,72 +477,237 @@ void loop() {
         payloads.sensors &= ~(1 << 2);
         pirState = false;
     }
-#endif
-#endif
-
-    power_adc_enable();
-    readVcc(); // scrap first reading
-    payloads.voltage = readVcc(); // Get supply voltage
-    readTempSensor();
-    payloads.temperature = readTempSensor(); // Get temperature
-    power_adc_disable();
-
-    if (usb_inserted()) {
-        if (usb_removed) {
-            usb_wake();
-            command_prompt();
-            powersave();
-        }
-    } else {
-        usb_removed = true;
-    }
-
-    payloads.counter++;
 
     /*
-    if (payloads.counter == 3) {
-        RED_LED_ON();
-        //UDINT &= ~(1 << WAKEUPI);           // UDINT.WAKEUPI = 0;
-        usb_wake();
-        payloads.test = UDINT;//UDIEN;
+    delay(100);
+    RED_LED_OFF();
+    delay(100);
+    */
+#endif
+#endif
 
-        while (1) {
-            if (Serial.available()) {
-                sCmd.readSerial();
-            }
-        }
+    /*
+    payloads.sensors = 0;
+    if (digitalRead(SENSOR_REED_PIN)) {
+        payloads.sensors |= (1 << 0);
+    }
 
-        //delay(2000);
-        //RED_LED_OFF();
-    } else {
-        //RED_LED_OFF();
+    if (digitalRead(SENSOR_VIBRATION_PIN)) {
+        payloads.sensors |= (1 << 1);
     }
     */
 
-    rfwrite(&payloads, sizeof payloads); // Send data via RF
+    /*
+    if (payloads.voltage > 2400) {// Only send if enough "juice" is available i.e supply V >2.4V
+        payloads.counter++;
+        rfwrite(); // Send data via RF
+    }
+    */
+
+    payloads.counter++;
+    rfwrite_(); // Send data via RF
+
+/*
+                for (uint8_t i = 0; i < 10; i++) {
+                    RED_LED_ON();
+                    delay(200);
+                    RED_LED_OFF();
+                    delay(200);
+                }
+*/
+    //GREEN_LED_OFF()
 
     payloads.sensors = 0;
 
+#ifdef SEND_WHEN_INPUT_CHANGE
+#ifdef SENSOR_REED
+    reedState = false;
+#endif
+#ifdef SENSOR_VIBRATION
+    vibrationState = false;
+#endif
+#ifdef SENSOR_PIR
+    pirState = false;
+#endif
+#endif
+/*
     if (REMOTE_IS_ACTIVE()) {
-        remote_handler();
+        PLN();
+
+        power_spi_enable();
+        rf12_sleep(-1);              // Wake up RF module
+
+        //rf12_sendStart(RF12_HDR_ACK | nodeid, data, sizeof data);
+
+        payload_challenge_t payload;
+        payload.command = REMOTE_CMD_READY;
+        uint8_t challenge[KEY_SIZE];
+        get_random(KEY_SIZE, challenge);
+
+        memcpy(&payload.challenge, &challenge, sizeof payload.challenge);
+
+        uint8_t data = REMOTE_CMD_READY;
+        rf12_sendStart(RF12_HDR_ACK | remote_node_id, &payload, sizeof payload);
+
+        // Wait for ACK
+        if (!waitForAck()) {
+            REMOTE_MODE_EXIT();
+            return;
+        }
+
+        unsigned long last_cmd_time, last_time;
+        last_cmd_time = last_time = millis();
+
+        // Now, standby for challenge !
+        while (1) {
+
+            // Wait for challenge !
+            if (last_time + 5000 < millis()) {
+                REMOTE_MODE_EXIT();
+                break;
+            }
+
+            if (rf12_recvDone()) {
+
+                if (rf12_crc != 0) {
+                    continue;
+                }
+
+                char key[] = "toto";
+                payload = *(payload_challenge_t*)rf12_data;
+                if (payload.command == REMOTE_CMD_READY && rf12_len == KEY_SIZE + 1) {
+
+                    bool good = true;
+
+                    for (uint8_t i = 0; i < min(KEY_SIZE, rf12_len - 1); i++) {
+                        if ((challenge[i] ^ key[i]) != payload.challenge[i]) {
+                            good = false;
+                            break;
+                        }
+                    }
+
+                    if (good) {
+                        rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+                    } else {
+                        REMOTE_MODE_EXIT();
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        stateGreenLed = digitalRead(GREEN_LED_PIN);
+
+        last_cmd_time = last_time = millis();
+
+        while (REMOTE_IS_ACTIVE()) {
+
+            if (last_time + 250 < millis()) {
+
+                if (config.feedback) {
+                    digitalWrite(GREEN_LED_PIN, !digitalRead(GREEN_LED_PIN));
+                }
+
+                //digitalWrite(RED_LED_PIN, !digitalRead(RED_LED_PIN));
+                last_time = millis();
+
+                if (last_cmd_time + (config.cmd_timeout * 1000) < millis()) {
+                //if (last_cmd_time + 30000 < millis()) {
+                    uint8_t data = REMOTE_CMD_EXIT;
+                    rf12_sendStart(RF12_HDR_ACK | remote_node_id, &data, sizeof data);
+
+                    rf12_sendWait(2);
+
+                    // Wait for ACK
+                    if (!waitForAck()) {
+                        continue;
+                    }
+
+                    REMOTE_MODE_EXIT();
+                    break;
+                }
+            }
+
+            if (rf12_recvDone()) {
+
+                if (rf12_crc != 0) {
+                    continue;
+                }
+
+                if (RF12_WANTS_ACK) {
+                    rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+                    rf12_sendWait(2);
+                }
+
+                last_cmd_time = millis();
+
+                switch (rf12_data[0]) {
+                    case REMOTE_CMD_EXIT:
+                        REMOTE_MODE_EXIT();
+                        break;
+                    case REMOTE_CMD_LED_TOGGLE:
+                        for (uint8_t i = 0; i < sizeof led_mapping; i++) {
+                            if (BIT_TEST(rf12_data[1], i)) {
+                                digitalWrite(led_mapping[i], !digitalRead(led_mapping[i]));
+                            }
+                        }
+                        break;
+                    case REMOTE_CMD_LED_SET:
+                        // led set 3 1
+                        for (uint8_t i = 0; i < sizeof led_mapping; i++) {
+                            if (BIT_TEST(rf12_data[1], i)) {
+                                digitalWrite(led_mapping[i], rf12_data[2] ? HIGH : LOW);
+                            }
+                        }
+                        break;
+                    case REMOTE_CMD_PERIOD:
+                        config.period = (uint8_t)rf12_data[1];
+                        config_save();
+                        break;
+                    case REMOTE_CMD_POWER:
+                        // 0: highest, 7: lowest
+                        config.power = (value > 7 ? 7 : (uint8_t)rf12_data[1]);
+                        //config_save();
+                        save_and_apply();
+                        break;
+                    case REMOTE_CMD_FEEDBACK:
+                        config.feedback = (bool)rf12_data[1];
+                        config_save();
+                        break;
+                    case REMOTE_CMD_TIMEOUT:
+                        config.cmd_timeout = max(CMD_TIMEOUT_MIN, (uint8_t)rf12_data[1]);
+                        config_save();
+                        break;
+                }
+            }
+        }
+
+        digitalWrite(GREEN_LED_PIN, stateGreenLed);
+
+        power_spi_disable();
     } else {
+        //for(int j = 0; j < 1; j++) {    // Sleep for j minutes
         dodelay(config.period * 1000);
+        //dodelay(3000);
+        //}
     }
+    */
+    dodelay(config.period * 1000);
+
+    //delay(2000);
 
 #ifdef SEND_WHEN_INPUT_CHANGE
     // Re-enable int
 #ifdef SENSOR_REED
-    reedState = false;
     EIFR |= (1 << INTF1);
     EIMSK |= (1 << SENSOR_REED_INT);
 #endif
 #ifdef SENSOR_VIBRATION
-    vibrationState = false;
     EIFR |= (1 << INTF3);
     EIMSK |= (1 << SENSOR_VIBRATION_INT);
 #endif
 #ifdef SENSOR_PIR
-    pirState = false;
     EIFR |= (1 << INTF1);
     EIMSK |= (1 << SENSOR_PIR_INT);
 #endif
@@ -786,5 +723,79 @@ void loop() {
     digitalWrite(SENSOR_REED_PIN, HIGH); // Enable pull up
     digitalWrite(SENSOR_VIBRATION_PIN, HIGH); // Enable pull up
     */
+}
+
+void dodelay(unsigned int ms){
+    if (usb == 0) {
+        byte oldADCSRA = ADCSRA;
+        byte oldADCSRB = ADCSRB;
+        byte oldADMUX = ADMUX;
+
+        Sleepy::loseSomeTime(ms); //JeeLabs power save function: enter low power mode for x seconds (valid range 16-65000 ms)
+
+        ADCSRA = oldADCSRA; // restore ADC state
+        ADCSRB = oldADCSRB;
+        ADMUX = oldADMUX;
+    } else {
+        delay(ms);
+    }
+}
+
+byte waitForAck() {
+    MilliTimer ackTimer;
+    while (!ackTimer.poll(ACK_TIME)) {
+        if (rf12_recvDone() && rf12_crc == 0 && rf12_hdr == (RF12_HDR_DST | RF12_HDR_CTL | config.nodeid)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void rfwrite_(){
+    power_spi_enable();
+
+    if (config.ACK) {
+        for (byte i = 0; i <= RETRY_LIMIT; ++i) {  // tx and wait for ack up to RETRY_LIMIT times
+            rf12_sleep(-1);              // Wake up RF module
+
+            while (!rf12_canSend())
+                rf12_recvDone();
+
+            rf12_sendStart(RF12_HDR_ACK, &payloads, sizeof payloads);
+            rf12_sendWait(2);           // Wait for RF to finish sending while in standby mode
+            byte acked = waitForAck();  // Wait for ACK
+            rf12_sleep(0);              // Put RF module to sleep
+            if (acked) {
+                /*
+                for (uint8_t i = 0; i < 10; i++) {
+                    RED_LED_ON();
+                    delay(200);
+                    RED_LED_OFF();
+                    delay(200);
+                }
+
+                if (GUARD_IS_ACTIVE() && rf12_len == 1 && rf12_data[0] == REMOTE_CMD_INIT) {
+                    REMOTE_MODE_START();
+                    remote_node_id = (int)rf12_hdr & 0x1F;
+                }
+                */
+
+                // Return if ACK received
+                power_spi_disable();
+                return; // Break ?
+            }
+            dodelay(RETRY_PERIOD * 1000); // If no ack received wait and try again
+        }
+    } else {
+        rf12_sleep(-1);              // Wake up RF module
+
+        while (!rf12_canSend())
+            rf12_recvDone();
+
+        rf12_sendStart(0, &payloads, sizeof payloads);
+        rf12_sendWait(2);           // Wait for RF to finish sending while in standby mode
+        rf12_sleep(0);              // Put RF module to sleep
+        power_spi_disable();
+    }
 }
 
