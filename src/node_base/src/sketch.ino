@@ -124,8 +124,8 @@ void cmd_runrecognized(const char *command) {
 
 uint8_t remote_connection_status = REMOTE_STATUS_OFF;
 
-uint8_t ack_data;
 void cmd_remote() {
+    uint8_t ack_data[REMOTE_CMD_INIT_SIZE];
     char *arg, *key;
     uint8_t nodeid;
     int a  = 3;
@@ -294,9 +294,14 @@ void cmd_remote() {
                     PLN("Exiting remote !");
                     remote_connection_status = REMOTE_STATUS_OFF;
                     REMOTE_MODE_EXIT();
+                    break;
                 } else {
-                    P("PIF");
-                    PLN(rf12_data[0]);
+                    // Unknow command ? Exit !
+                    //P("PIF");
+                    //PLN(rf12_data[0]);
+                    remote_connection_status = REMOTE_STATUS_OFF;
+                    REMOTE_MODE_EXIT();
+                    break;
                 }
             } else if (remote_connection_status == REMOTE_STATUS_CONNECTING) {
                 // Skip
@@ -310,9 +315,11 @@ void cmd_remote() {
             if (RF12_WANTS_ACK) {
                 if (remote_connection_status == REMOTE_STATUS_CONNECTING) {
                     //rf12_sendStart(RF12_ACK_REPLY, (const char*)REMOTE_CMD_INIT, 1);
-                    ack_data = REMOTE_CMD_INIT;
+                    //ack_data = REMOTE_CMD_INIT;
+                    memset(&ack_data, REMOTE_CMD_INIT, REMOTE_CMD_INIT_SIZE);
                     //rf12_sendStart(RF12_ACK_REPLY | nodeid, &ack_data, 1);
-                    rf12_sendStart(RF12_ACK_REPLY, &ack_data, 1);
+                    //rf12_sendStart(RF12_ACK_REPLY, &ack_data, 1);
+                    rf12_sendStart(RF12_ACK_REPLY, &ack_data, REMOTE_CMD_INIT_SIZE);
                     PLN("[ok!]");
                     P("Wait for ready command.");
 
