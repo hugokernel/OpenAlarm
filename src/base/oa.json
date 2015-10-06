@@ -1,0 +1,64 @@
+// BEGIN: Ajouté à la volée
+bit = 'bit';
+int = 'int';
+char = 'abcdefghijklmnop';
+
+falling = 'falling';
+change = 'change';
+rising = 'rising';
+
+pullup = 'pullup';
+output = 'output';
+input = 'input';
+
+counter = 'counter';
+wakeinfo = 'wakeinfo';
+wakearg = 'wakearg';
+// END
+
+oa = {
+    declare: {
+        // Implicit :
+
+        // Déclare ioX comme étant l'io 0 avec une longueur de 1 bit
+        io0: [ 0, bit ],
+        io1: [ 1, bit ],
+        io2: [ 2, bit ],
+        // [...]
+
+        // Explicit :
+
+        // Déclare ds18b20 comme valeur 129 (doit être fait dans le code de l'arduino aussi)
+        // et indique que la valeur retourné sera de 4 byte
+        ds18b20: [ 129, 4 ] // ou [ 129, char[4] ]
+    },
+
+    // Ici, on défini ce qui va réveillé l'µc afin de constituer une frame pour ensuite l'envoyer
+    external_interrupts: {
+        io0: falling,
+        io1: change,
+    },
+
+    // Au démarrage du mode guard, les initialisations diverses à faire
+    inputs: {
+        io0: [ input, pullup ],
+        io1: [ output, high ]
+    },
+
+    // Le contenu de chaque frame
+    frame: {
+        // Implicit :
+        preamble: {
+            counter,
+            wakeinfo,
+            wakearg,
+        }
+
+        // Explicit :
+        // Ici, les 3 bits seront inclus dans 1 seul byte
+        [ io2, io1, io0 ],
+        an0,
+        an1,
+        ds18b20
+    }
+};

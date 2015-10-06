@@ -1,0 +1,86 @@
+
+devices:
+    /dev/toto:
+        config: default
+    /dev/tty.usbmodemfa141:
+        config: default
+    /dev/tty.usbmodemfd131:
+        config: default
+
+keys:
+    1: abcdefghijklmnop
+    5: poiuytrewqasdfgh
+
+configs:
+    default:
+        group: 210
+        band: 433
+        ack: yes
+        timeout: 15
+        autostart: yes
+        power: 0
+        remote:
+            active: yes
+            wait_error_cycle: 7
+
+frames:
+    misc:
+        id: 1
+        content:
+            - analog0
+            - [ input0, input1, input2 ]
+            - analog1
+            - ds18b20
+    xxx: &xxx
+        id: 2
+        content:
+            - [ input0, input1, input2 ]
+            - voltage
+            - temperature
+
+profiles:
+    test:
+        description: Petit test !
+        feedback: yes
+        period: 3
+        eintwait: 3
+        declare:
+            ds18b20: [ 129, 4 ]
+        external_interrupts:
+            io0: falling
+            io1: change
+            int4: falling
+            int1: rising
+        ios:
+            io0: [ input, pullup ]
+            io1: [ output, high ]
+            io2: [ output, nopullup, high ]
+        frame:
+            id: 3
+            name: xxx
+            content:
+                - analog0
+                - [ input0, input1, input2 ]
+                - analog1
+                - ds18b20
+    pir0:
+        description: Module avec capteur infrarouge 0
+        feedback: yes
+        period: 3
+        eintwait: 3
+        external_interrupts:
+            io0: rising
+        ios:
+            io0: [ input, nopullup ]
+        frame: *xxx
+    pir1:
+        description: Module avec capteur infrarouge 1
+        feedback: no
+        period: 10
+        eintwait: 3
+        external_interrupts:
+            io0: rising
+        ios:
+            io0: [ input, nopullup ]
+        frame: *xxx
+
