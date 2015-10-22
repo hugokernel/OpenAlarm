@@ -1,22 +1,24 @@
 
 devices:
-    /dev/toto:
-        config: default
     /dev/tty.usbmodemfa141:
         config: default
     /dev/tty.usbmodemfd131:
         config: default
+    /dev/tty.usbmodemfd1321:
+        config: default
+    /dev/tty.usbmodemfd1331:
+        config: default
 
-keys:
-    1: abcdefghijklmnop
-    5: poiuytrewqasdfgh
+declare:
+    ds18b20: [ 129, 4 ]
 
 configs:
-    default:
+    default: &default
         group: 210
-        band: 433
+        freq: 433
         ack: yes
-        timeout: 15
+        cmdtimeout: 15
+        usbtimeout: 15
         autostart: yes
         power: 0
         remote:
@@ -24,28 +26,39 @@ configs:
             wait_error_cycle: 7
 
 frames:
-    misc:
+    pir: &framepir
+        id: 2
+        content:
+            - counter
+            - waketype
+            - wakearg
+            - [ input0, input1, input2 ]
+            - voltage
+            - temperature
+    temp: &frametemp
         id: 1
+        content:
+            - voltage
+            - temperature
+    misc:
+        id: 3
         content:
             - analog0
             - [ input0, input1, input2 ]
             - analog1
             - ds18b20
-    xxx: &xxx
-        id: 2
+    test:
+        id: 66
         content:
-            - [ input0, input1, input2 ]
             - voltage
             - temperature
 
 profiles:
-    test:
+    test: &test
         description: Petit test !
         feedback: yes
         period: 3
         eintwait: 3
-        declare:
-            ds18b20: [ 129, 4 ]
         external_interrupts:
             io0: falling
             io1: change
@@ -63,7 +76,7 @@ profiles:
                 - [ input0, input1, input2 ]
                 - analog1
                 - ds18b20
-    pir0:
+    pir0: &profilepir0
         description: Module avec capteur infrarouge 0
         feedback: yes
         period: 3
@@ -72,8 +85,8 @@ profiles:
             io0: rising
         ios:
             io0: [ input, nopullup ]
-        frame: *xxx
-    pir1:
+        frame: *framepir
+    pir1: &profilepir1
         description: Module avec capteur infrarouge 1
         feedback: no
         period: 10
@@ -82,5 +95,53 @@ profiles:
             io0: rising
         ios:
             io0: [ input, nopullup ]
-        frame: *xxx
+        frame: *framepir
+    temp: &profiletemp
+        description: Sonde de température
+        feedback: no
+        period: 10
+        eintwait: 3
+        frame: *framepir
+
+nodes:
+    temp:
+        id: 1
+        config: *default
+        key: JAKAILOMSJDHFUIO
+        profile:
+            0: *profiletemp
+    pir:
+        id: 2
+        config: *default
+        key: abcdefghijklmnop
+    test3:
+        id: 3
+        config: *default
+        key: poiuytrewqasdfgh
+        frame: *framepir
+        profile:
+            0: *profilepir0
+            1: *profilepir1
+    temp4:
+        id: 4
+        config: *default
+        key: ANLYKLALZMNDFGCV
+        profile:
+            0: *profiletemp
+    test:
+        id: 5
+        config: *default
+        key: poiuytrewqasdfgh
+        frame: *framepir
+        profile:
+            0: *profilepir0
+            1: *profilepir1
+    test8:
+        id: 8
+        config: *default
+        key: poiuytrewqasdfgh
+        frame: *framepir
+        profile:
+            0: *profilepir0
+            1: *profilepir1
 

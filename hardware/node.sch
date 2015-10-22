@@ -8910,7 +8910,6 @@ Source: http://www.maxim-ic.com .. MAX1551-MAX1555.pdf</description>
 <wire x1="114.3" y1="38.1" x2="71.12" y2="38.1" width="0.1524" layer="98"/>
 <wire x1="71.12" y1="38.1" x2="71.12" y2="-44.45" width="0.1524" layer="98"/>
 <text x="74.93" y="29.21" size="5.08" layer="98">Interface</text>
-<text x="16.51" y="127" size="3.81" layer="98">C3, C4, C5 : 0603 -&gt; 0402</text>
 <text x="16.51" y="-44.45" size="3.81" layer="98">INT:
 D0, D1, D2, D3, D7</text>
 <text x="46.99" y="-36.83" size="3.81" layer="98">PCINT:
@@ -8919,6 +8918,7 @@ D8, D9</text>
 <text x="74.93" y="72.39" size="5.08" layer="98">Proto Shield</text>
 <wire x1="71.12" y1="38.1" x2="71.12" y2="81.28" width="0.1524" layer="98"/>
 <text x="118.11" y="29.21" size="5.08" layer="98">LiPo Shield</text>
+<text x="15.24" y="124.46" size="3.81" layer="98">Ajouter des condos de découplage</text>
 </plain>
 <instances>
 <instance part="R2" gate="G$1" x="172.72" y="88.9" rot="R90"/>

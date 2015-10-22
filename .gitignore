@@ -15,7 +15,7 @@ var
 sdist
 develop-eggs
 .installed.cfg
-lib
+/lib
 lib64
 __pycache__
 
@@ -40,7 +40,4 @@ nosetests.xml
 *.s#*
 *.l#*
 
-src/.build
-src/funky/.build
-src/node_test/.build
-src/node_base/.build
+.build
