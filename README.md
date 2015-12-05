@@ -1,12 +1,18 @@
 OpenAlarm
 =========
 
-Un système d'alarme libre (opensource / openhardware).
+Un système d'alarme libre.
 
-Présentation du projet : http://www.digitalspirit.org/blog/index.php/post/2014/01/10/OpenAlarm-%3A-Un-syst%C3%A8me-d-alarme-libre
+Caractéristiques :
 
-Présentation des premiers Node : http://www.digitalspirit.org/blog/index.php/post/2015/06/15/Pr%C3%A9sentation-des-OpenAlarm-Node
+- Uniquement basé sur des briques libres (OpenSource / OpenHardware)
+- Autonomie très grande des modules capteurs, appelés « Node » (plusieurs mois)
+- Les Node sont basés sur un µcontrolleur Atmel AVR ATMega32U4 et l'interface radio, sur un RFM12B (basé sur un Si4421 http://www.silabs.com/products/wireless/EZRadio/Pages/Si442021.aspx)
+- Programmation et recharge simple des Node par USB (port µUSB inclu)
+- Pas besoin de base : 2 Node suffisent à faire fonctionner une surveillance
+- Possibilité de modifier les paramètres d'un Node à distance
+- Technos utilisées : Arduino (Ino) pour les Node, et Python pour l'interface avec un PC
+- Les entrées / sorties sont facilement accessible (au pas de 2.54mm)
+- 2 leds (vertes et rouges) inclues sur chaque Node
 
-Le fonctionnement du logiciel interne au Node : http://www.digitalspirit.org/blog/index.php/post/2015/11/16/Les-entrailles-d-OpenAlarm-%3A-Le-firmware et la partie en Python http://www.digitalspirit.org/blog/index.php/post/2015/11/27/Les-entrailles-d-OpenAlarm-%3A-Une-premi%C3%A8re-interface-PC
-
-Pour rester informer, ça se passe sur le site officiel d'OpenAlarm http://openalarm.net/
+Pour rester informer, ça se passe sur le site officiel d'OpenAlarm http://openalarm.net/, vous pouvez venir en parler sur le canal irc #madeinfr sur le réseau freenode.
