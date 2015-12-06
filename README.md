@@ -15,4 +15,6 @@ Caractéristiques :
 - Les entrées / sorties sont facilement accessible (au pas de 2.54mm)
 - 2 leds (vertes et rouges) inclues sur chaque Node
 
+Les premiers Node sont fonctionnel en version 1.5.0, les schémas de principe et PCB sont disponible en PDF dans le dossier https://github.com/hugokernel/OpenAlarm/blob/master/hardware/export/pdf/node/1.5.0/
+
 Pour rester informer, ça se passe sur le site officiel d'OpenAlarm http://openalarm.net/, vous pouvez venir en parler sur le canal irc #madeinfr sur le réseau freenode.
