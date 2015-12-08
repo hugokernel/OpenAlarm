@@ -707,7 +707,8 @@ void cmd_set() {
         config.power = (value > 7 ? 7 : value);
 
         CONFIG_SAVE_PARTIAL(power);
-        rfm_init(false);
+        //rfm_init(false);
+        rfm_init();
         status = true;
     } else if (!strcmp(arg, "eintwait")) {
         PROFILE_CURRENT.eint_wait_cycle = atoi(sCmd.next());
