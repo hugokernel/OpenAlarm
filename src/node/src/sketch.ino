@@ -26,11 +26,6 @@
  *  - Faire des define pour les listen, etc...
  */
 
-/*
-#include <extEEPROM.h>
-extEEPROM eep(kbits_2, 1, 8, 0x50);
-*/
-
 extern bool debug;
 
 uint8_t led_mapping[] = {
@@ -963,6 +958,7 @@ void command_prompt(uint8_t timeout) {
                     }
 #endif
                     PLN();
+
                 } else {
                     DEBUGLN("Data len 0 !");
                 }
