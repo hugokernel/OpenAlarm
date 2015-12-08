@@ -202,7 +202,7 @@ def parse_frame(content):
                 else:
                     frame_add(item)
             except KeyError:
-                raise OAException("Unknow frame item: %s" % item)
+                raise OAException("Unknow frame item: %s" % (item))
     except OAException as e:
         print(e)
         return
@@ -219,7 +219,7 @@ def parse_frames():
 if 'declare' in yaml:
     for index, item in yaml['declare'].items():
         if index in frame_content_map:
-            raise OAException("Frame %s already exists !" % index)
+            raise OAException("Frame %s already exists !" % (index))
         frame_content_map[index] = tuple(item)
 
 def parse_profile(content, name=None):
@@ -260,7 +260,7 @@ def parse_profile(content, name=None):
                     #        int_num = value
 
                 if int_num is None:
-                    raise OAException("External interrupt %s not found !" % index)
+                    raise OAException("External interrupt %s not found !" % (index))
 
                 if info.lower() not in EXT_INT_TYPE:
                     raise OAException("External interrupt type invalid !")
@@ -283,7 +283,7 @@ def parse_profile(content, name=None):
                     io_num = int(index[2:])
 
                 if io_num == -1 or (io_num not in IOS) or io_num is None:
-                    raise OAException("Input / Output %s not found !" % index);
+                    raise OAException("Input / Output %s not found !" % (index));
 
                 profile.ios[io_num] = []
 
@@ -322,7 +322,7 @@ def parse_profile(content, name=None):
                 else:
                     frame_add(item)
             except KeyError:
-                raise OAException("Unknow frame item: %s" % item)
+                raise OAException("Unknow frame item: %s" % (item))
         profile.frame = frame
     except OAException as e:
         print(e)
@@ -369,9 +369,9 @@ if __name__ == '__main__':
 
         def send(self, string, read=False):
             if self.debug or self.verbose:
-                print('%s' % string)
+                print('%s' % (string))
             if not self.debug:
-                self.serial.write(bytes('%s\r' % string, 'ascii'))
+                self.serial.write(bytes('%s\r' % (string), 'ascii'))
             if read:
                 # Eat response
                 self.read()
@@ -382,7 +382,7 @@ if __name__ == '__main__':
             else:
                 response = 'OK'
             if self.verbose:
-                print("-> %s" % response)
+                print("-> %s" % (response))
             return response if not self.debug else 'OK'
 
         @contextlib.contextmanager
@@ -394,7 +394,7 @@ if __name__ == '__main__':
                 yield
             finally:
                 # Restore verbose
-                self.send("verbose set %s" % verbose)
+                self.send("verbose set %s" % (verbose))
 
         @contextlib.contextmanager
         def save_profile(self):
@@ -404,7 +404,7 @@ if __name__ == '__main__':
                 yield
             finally:
                 # Restore profile
-                self.send("profile set %s" % profile)
+                self.send("profile set %s" % (profile))
 
     def send(cmd, error="Error !"):
         ser.send(cmd)
@@ -424,7 +424,7 @@ if __name__ == '__main__':
     def write_profile(ser, profile, profile_id=0):
 
         if profile_id is not None:
-            ser.send("set profile set %i" % profile_id, True)
+            ser.send("set profile set %i" % (profile_id), True)
 
         profile = parse_profile(profile)
 
@@ -440,12 +440,12 @@ if __name__ == '__main__':
 
         # Program ios
         for line in [ str(io) + ' ' + ' '.join(data) for io, data in profile.ios.items() ]:
-            send("io set %s" % line, "Error while setting io !")
+            send("io set %s" % (line), "Error while setting io !")
 
         # Program int
         send("int clear")
         for line in [ str(io) + ' ' + data for io, data in profile.ext_int.items() ]:
-            send("int add %s\r" % line, "Error while setting int !")
+            send("int add %s\r" % (line), "Error while setting int !")
 
     force_node_id = None
     def test_nodeid(config_nodeid):
@@ -471,16 +471,15 @@ if __name__ == '__main__':
 
             def open_serial(device):
                 try:
-                    ser = Serial(device)
+                    return Serial(device)
                 except serial.serialutil.SerialException:
                     pass
-                return ser
 
             if '-p' in arguments and arguments['-p'] is not None:
                 device = arguments['-p']
                 ser = open_serial(device)
                 if not ser:
-                    raise OAException("Unable to open device %s !" % device)
+                    raise OAException("Unable to open device %s !" % (device))
             else:
                 for device in parse_devices():
                     ser = open_serial(device)
@@ -490,7 +489,7 @@ if __name__ == '__main__':
                 if not ser:
                     raise OAException("Unable to open any device !")
 
-            print("Use device %s" % device)
+            print("Use device %s" % (device))
         else:
             ser = Serial(None)
 
@@ -502,9 +501,9 @@ if __name__ == '__main__':
         # +--------+
         if arguments['nodeid'] == True:
             nodeid = int(arguments['<nodeid>'])
-            print("Set nodeid to %i" % nodeid)
+            print("Set nodeid to %i" % (nodeid))
             with ser.save_verbose():
-                ser.send("set nodeid %i" % nodeid)
+                ser.send("set nodeid %i" % (nodeid))
 
         # +--------+
         # | Config |
@@ -515,9 +514,9 @@ if __name__ == '__main__':
                 name = arguments['<config>']
 
                 if name not in yaml['configs']:
-                    raise OAException("Config %s not found !" % name)
+                    raise OAException("Config %s not found !" % (name))
 
-                print("Program node with config '%s'" % name)
+                print("Program node with config '%s'" % (name))
 
                 # Write config !
                 with ser.save_verbose():
@@ -550,7 +549,7 @@ if __name__ == '__main__':
                 #profiles = parse_profiles();
 
                 if name not in yaml['profiles']:
-                    raise OAException("Profile %s not found !" % name)
+                    raise OAException("Profile %s not found !" % (name))
 
                 profile_id = None
                 try:
@@ -558,7 +557,7 @@ if __name__ == '__main__':
                 except TypeError:
                     pass
 
-                print("Program node with profile '%s'" % name)
+                print("Program node with profile '%s'" % (name))
 
                 # Write profile !
                 with ser.save_verbose():
@@ -568,9 +567,9 @@ if __name__ == '__main__':
                 profile_id = int(arguments['<profile_id>'])
 
                 with ser.save_verbose():
-                    ser.send("profile set %i" % profile_id)
+                    ser.send("set profile %i" % (profile_id))
                     if ser.read() != 'OK':
-                        raise OAException("Error while setting profile to %i !" % profile_id)
+                        raise OAException("Error while setting profile to %i !" % (profile_id))
 
         # +------+
         # | Node |
@@ -581,16 +580,16 @@ if __name__ == '__main__':
                 name = arguments['<node_name>']
 
                 if name not in yaml['nodes']:
-                    raise OAException("Node %s not found !" % name)
+                    raise OAException("Node %s not found !" % (name))
 
                 test_nodeid(yaml['nodes'][name]['id'])
 
                 with ser.save_verbose():
                     for name, content in yaml['nodes'][name].items():
                         if name == 'id':
-                            ser.send("set nodeid %i" % content)
+                            ser.send("set nodeid %i" % (content))
                         elif name == 'key':
-                            ser.send("set key set %s" % force_node_id if force_node_id else content)
+                            ser.send("set key set %s" % (force_node_id if force_node_id else content))
                         elif name == 'config':
                             write_config(ser, content)
                         elif name == 'profile':
@@ -678,10 +677,10 @@ if __name__ == '__main__':
                 print("    {:<{maxsize}}: {}".format(name, data, maxsize=maxsize + 1))
 
             import datetime
-            if '--csv' in arguments and arguments['--csv'] is not None:
+            if '--csv' in arguments and arguments['--csv'] is not False:
                 import csv
                 csv_file = arguments['<csv_file>']
-                f = open(csv_file, 'w', encoding='UTF8')
+                f = open(csv_file, 'a')
                 writer = csv.writer(f)
 
             with ser.save_verbose():
@@ -736,7 +735,7 @@ if __name__ == '__main__':
                             try:
                                 name = item.name.lower()
                             except AttributeError:
-                                print("Pouf! %s" % name)
+                                print("Pouf! %s" % (name))
                                 sys.exit()
                             _, size = frame_content_map[name]
 
@@ -766,12 +765,12 @@ if __name__ == '__main__':
                                     data.append(result)
                                     print_result(name.capitalize(), result)
                                 except KeyError:
-                                    print("Unable to found frame decoder (%s)" % name)
+                                    print("Unable to found frame decoder (%s)" % (name))
 
                             lastisbit = isbit(_.value)
 
-                        if csv and nodeid == 5:
-                            writer.writerow(data)
+                        #if csv and nodeid == 5:
+                        #    writer.writerow(data)
 
                         nodeinfo[nodeid]['last'] = time.time()
                         #time.sleep(1)
@@ -790,7 +789,7 @@ if __name__ == '__main__':
             name = arguments['<node_name>']
 
             if name not in nodes:
-                raise OAException("Node %s not found !" % name)
+                raise OAException("Node %s not found !" % (name))
 
             node = nodes[name]
 
@@ -813,7 +812,7 @@ if __name__ == '__main__':
                     raise OAException("Invalid command format !")
 
                 if not key in valid_commands:
-                    raise OAException("Unknow command (use: %s) !" % ', '.join(valid_commands.keys()))
+                    raise OAException("Unknow command (use: %s) !" % (', '.join(valid_commands.keys())))
 
                 if int(val) > 255:
                     raise OAException("Invalid format argument !");
@@ -821,7 +820,7 @@ if __name__ == '__main__':
                 commands.append((valid_commands[key], int(val)))
 
             with ser.save_verbose():
-                print("Start remote connection with node %i !" % node['id'])
+                print("Start remote connection with node %i !" % (node['id']))
                 ser.send("remote %i %s" % (node['id'], node['key']))
 
                 try:
